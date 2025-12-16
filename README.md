@@ -12,10 +12,10 @@ MEA can be implemented using taylor expansion of the matrix exponential based on
 
 ## Citation
 
-```
+```bibtex
 @article{zhang2025matrix,
    title   = {Matrix Exponential Attention},
-   author  = {Zhang, Yifan },
+   author  = {Zhang, Yifan},
    journal = {arXiv preprint TBD},
    year    = {2025}
 }
