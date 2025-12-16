@@ -28,7 +28,9 @@ We approximate this by truncating the series at order $H$ (typically $H=2$).
 
 ### Recursive Decomposition via AHLA
 
-Directly computing $\mathbf{A}^k \mathbf{V} = (\mathbf{Q}\mathbf{K}^\top)^k \mathbf{V}$ requires $\mathcal{O}(n^2)$ complexity. MEA utilizes the **Asymmetric Higher-order Linear Attention (AHLA)** operator (defined in Section 6 of the HLA paper) to factorize these terms into streaming updates with $\mathcal{O}(N)$ complexity.
+Explicitly computing the matrix power $\mathbf{A}^k$ would require **$\mathcal{O}(n^3)$** complexity, and even an optimized iterative product $\mathbf{A}(\mathbf{A}\mathbf{V})$ scales as $\mathcal{O}(n^2)$.
+
+MEA exploits the associativity of matrix multiplication to factorize these terms into streaming updates with **$\mathcal{O}(n)$ complexity**.
 
 The expansion up to order $H=2$ is:
 
