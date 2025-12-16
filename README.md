@@ -99,9 +99,10 @@ This ensures the model is mathematically equivalent to a masked Transformer whil
 @article{zhang2025matrix,
    title   = {Matrix Exponential Attention},
    author  = {Zhang, Yifan},
-   journal = {arXiv preprint TBD},
-   month = {dec},
-   year    = {2025}
+   journal = {yifanzhang-pro.github.io},
+   year = {2025},
+   month = {December},
+   url = "https://github.com/yifanzhang-pro/MEA"
 }
 
 @article{zhang2025hla,
