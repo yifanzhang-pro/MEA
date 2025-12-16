@@ -4,6 +4,8 @@
 
 Author: Yifan Zhang
 
+Date: December 15, 2025
+
 $$
 \mathrm{MExp}(\mathbf{Q} \mathbf{K}^{\top}) \mathbf{V} \approx \sum_{k=0}^{H} \frac{1}{k!} \mathrm{HLA}_k(\mathbf{Q}, \mathbf{K}, \mathbf{V})
 $$
@@ -98,6 +100,7 @@ This ensures the model is mathematically equivalent to a masked Transformer whil
    title   = {Matrix Exponential Attention},
    author  = {Zhang, Yifan},
    journal = {arXiv preprint TBD},
+   month = {dec},
    year    = {2025}
 }
 
