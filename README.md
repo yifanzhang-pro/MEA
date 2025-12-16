@@ -1,6 +1,8 @@
 # MEA
 
-**Matrix Exponential Attention**
+**Matrix Exponential Attention** 
+
+Blog Post: [https://yifanzhang-pro.github.io/MEA](https://yifanzhang-pro.github.io/MEA) 
 
 **Author**: Yifan Zhang
 
