@@ -2,6 +2,8 @@
 
 **Matrix Exponential Attention**
 
+Author: Yifan Zhang
+
 $$
 \mathrm{MExp}(\mathbf{Q} \mathbf{K}^{\top}) \mathbf{V} \approx \sum_{k=0}^{H} \frac{1}{k!} \mathrm{HLA}_k(\mathbf{Q}, \mathbf{K}, \mathbf{V})
 $$
