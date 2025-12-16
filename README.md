@@ -76,8 +76,14 @@ $$
 $$
 
 Where:
-* $\mathbf{S}_t^K = \sum_{i \le t} \mathbf{k}_i \mathbf{k}_i^\top$ (Metric Tensor)
-* $\mathbf{G}_t = \sum_{i \le t} (\mathbf{k}_i \mathbf{k}_i^\top) \mathbf{C}_{i-1}^{QV}$ (Correction Term)
+
+$$
+\mathbf{S}_t^K = \sum_{i \le t} \mathbf{k}_i \mathbf{k}_i^\top
+$$ 
+
+$$
+\mathbf{G}_t = \sum_{i \le t} (\mathbf{k}_i \mathbf{k}_i^\top) \mathbf{C}_{i-1}^{QV}
+$$
 
 This ensures the model is mathematically equivalent to a masked Transformer while maintaining the efficiency of an RNN.
 
