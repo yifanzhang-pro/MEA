@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MEA: Matrix Exponential Attention</title>
+
+  <meta name="description" content="MEA approximates the matrix exponential of attention scores via a truncated Taylor series, leveraging Higher-order Linear Attention (HLA) for linear time complexity.">
+  <meta name="keywords" content="MEA, Matrix Exponential, Linear Attention, HLA, Transformers, Deep Learning, State Space Models, Taylor Series">
+  <meta name="author" content="Yifan Zhang">
+  <meta name="citation_title" content="Matrix Exponential Attention">
+  <meta name="citation_author" content="Yifan Zhang">
+  <meta name="citation_publication_date" content="2025/12/15">
+  <meta property="og:title" content="MEA: Matrix Exponential Attention"/>
+  <meta property="og:description" content="Computing high-order interaction terms in linear time without materializing n×n matrices."/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://github.com/yifanzhang-pro/MEA"/>
+  <link rel="canonical" href="https://github.com/yifanzhang-pro/MEA">
+  
+  <link rel="icon" href="https://placehold.co/32x32/0A2540/FFFFFF?text=M" type="image/x-icon">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        tags: 'ams'
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+  <style>
+    :root{
+      --primary-color:#0A2540;    /* Deep Navy */
+      --accent-color:#00C2FF;     /* Cyan Accent */
+      --main-bg:#FFFFFF;
+      --content-bg:#F6F8FA;
+      --text-main:#2D2D2D;
+      --text-on-primary:#FFFFFF;
+      --link-color:var(--primary-color);
+      --link-hover-color:#143E73;
+      --primary-color-rgb:10,37,64;
+      --link-color-rgb:10,37,64;
+      --border-color:#e5e7eb;
+      --shadow-color:rgba(0,0,0,0.1);
+    }
+
+    html{scroll-behavior:smooth}
+    body{
+      font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text-main); background:var(--main-bg);
+      display:flex; flex-direction:column; min-height:100vh;
+      text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* Navbar */
+    .navbar{
+      background:rgba(var(--primary-color-rgb),0.92);
+      backdrop-filter:blur(10px);
+      box-shadow:0 2px 5px var(--shadow-color);
+      position:sticky; top:0; z-index:100;
+    }
+    .navbar .navbar-item, .navbar .navbar-link{ color:var(--text-on-primary); font-weight:500; }
+    .navbar a.navbar-item:hover, .navbar .navbar-link:hover, .navbar-item.is-active{ color:var(--accent-color)!important; background:transparent!important; }
+    .navbar-burger{ color:var(--text-on-primary); }
+
+    /* Hero */
+    .hero{ background:linear-gradient(180deg, #0A2540 0%, #0e3055 100%); color:var(--text-on-primary); }
+    .hero .title{
+      font-family:'Space Grotesk', sans-serif; font-weight:700; color:var(--text-on-primary);
+      font-size:3.5rem; line-height:1.1;
+    }
+    .hero .subtitle.is-hero-subtitle{
+      color:rgba(255,255,255,0.92); font-size:1.5rem; max-width:980px; margin:1.25rem auto 2rem auto;
+    }
+    .hero .subtitle .highlight{ color:var(--accent-color); font-weight:600; }
+
+    .project-links a{ color:var(--text-on-primary); font-size:1.45rem; margin:0 0.6rem; transition:transform .25s ease, color .25s ease; }
+    .project-links a:hover{ color:var(--accent-color); transform:translateY(-2px); }
+
+    /* Authors */
+    .authors-list { font-size: 1.25rem; line-height: 1.6; margin-top: 1rem; color: rgba(255,255,255,0.95); font-weight: 500; }
+    .date-display { font-size: 0.95rem; color: rgba(255,255,255,0.7); margin-top: 0.5rem; font-style: italic;}
+
+    /* Sections */
+    .section.content-section{ padding:4.5rem 1.25rem; border-bottom:1px solid var(--border-color); }
+    .section.content-section:nth-child(even){ background:var(--content-bg); }
+    .section-title{
+      font-family:'Space Grotesk', sans-serif; font-weight:700; color:var(--primary-color);
+      margin-bottom:2.2rem;
+    }
+    .content{ max-width:900px; margin:0 auto; line-height:1.8; font-size:1.06rem; }
+    .content a{ color:var(--link-color); font-weight:500; text-decoration:none; border-bottom:2px solid rgba(var(--link-color-rgb),.2); }
+    .content a:hover{ color:var(--link-hover-color); border-bottom-color:var(--link-hover-color); }
+
+    /* Code & Pre */
+    .content pre{
+      background:#0f172a; color:#cbd5e1; border-radius:8px; padding:1.1em 1.2em;
+      overflow:auto; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);
+      font-size:0.95rem;
+    }
+    code{ background:#f2f4f7; color:#1f2937; padding:0.18em 0.38em; border-radius:4px; font-size:85%; }
+    pre code{ background:transparent; color:inherit; padding:0; font-size:inherit; }
+
+    /* Badges */
+    .pill{ display:inline-block; padding:.35rem .6rem; border-radius:999px; font-size:.82rem; background:#E6F7FF; color:#0A2540; margin:.15rem .25rem; border:1px solid #C8ECFF; }
+
+    /* Footer */
+    .footer{
+      background:var(--primary-color); color:var(--text-on-primary);
+      padding:2rem 1.5rem; border-top:3px solid var(--accent-color); margin-top:auto;
+    }
+    .footer a{ color:var(--accent-color); font-weight:500; }
+    .footer a:hover{ color:#ffffff; }
+
+    /* SVG Styling */
+    .diagram-container {
+        width: 100%;
+        margin: 2.5rem 0;
+        text-align: center;
+        background: #fff;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    }
+    svg text { font-family: 'Inter', sans-serif; }
+    
+    /* LaTeX block centering */
+    .math-block { margin: 1.5rem 0; overflow-x: auto; text-align: center; }
+
+    .callout-box {
+        border-left: 4px solid var(--accent-color);
+        background: #f0f9ff;
+        padding: 1rem 1.5rem;
+        margin: 1.5rem 0;
+        border-radius: 0 4px 4px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar" role="navigation" aria-label="main navigation">
+    <div class="container">
+      <div class="navbar-brand">
+        <a class="navbar-item is-size-5 has-text-weight-bold" href="#">MEA</a>
+        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarMenu">
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </a>
+      </div>
+      <div id="navbarMenu" class="navbar-menu">
+        <div class="navbar-end">
+          <a href="#overview" class="navbar-item">Overview</a>
+          <a href="#formulation" class="navbar-item">Formulation</a>
+          <a href="#decomposition" class="navbar-item">Recursive Decomposition</a>
+          <a href="#masking" class="navbar-item">Causal Masking</a>
+          <a href="#citation" class="navbar-item">Citation</a>
+          <a href="https://github.com/yifanzhang-pro/MEA" class="navbar-item" target="_blank"><i class="fab fa-github"></i>&nbsp;GitHub</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero is-medium">
+    <div class="hero-body">
+      <div class="container has-text-centered">
+        <h1 class="title">MEA</h1>
+        <h2 class="subtitle is-hero-subtitle">
+          <span class="highlight">Matrix Exponential Attention</span>
+        </h2>
+        
+        <div class="authors-list">
+           Yifan Zhang
+        </div>
+        <div class="date-display">
+           December 15, 2025
+        </div>
+
+        <div class="project-links" style="margin-top:1.5rem;">
+          <a href="https://github.com/yifanzhang-pro/MEA" target="_blank" rel="noopener" aria-label="GitHub Repository"><i class="fab fa-github"></i></a>
+          <a href="#citation" aria-label="Citation"><i class="fas fa-quote-right"></i></a>
+        </div>
+        <div style="margin-top:1.25rem;">
+          <span class="pill">Linear Attention</span>
+          <span class="pill">State Space Models</span>
+          <span class="pill">Taylor Expansion</span>
+          <span class="pill">Algorithm Design</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="overview" class="section content-section">
+      <div class="container">
+        <h2 class="title is-3 has-text-centered section-title">Overview</h2>
+        <div class="content has-text-justified">
+          <p>
+            Standard Transformers scale quadratically with sequence length due to the Softmax attention mechanism. <strong>Matrix Exponential Attention (MEA)</strong> offers a solution by approximating the matrix exponential of attention scores via a truncated Taylor series.
+          </p>
+          <div class="math-block">
+            $$
+            \mathrm{MExp}(\mathbf{Q} \mathbf{K}^{\top}) \mathbf{V} \approx \sum_{k=0}^{H} \frac{1}{k!} \mathrm{HLA}_k(\mathbf{Q}, \mathbf{K}, \mathbf{V})
+            $$
+          </div>
+          <p>
+            By leveraging the state-space realization of <strong>Higher-order Linear Attention (HLA)</strong>, MEA computes high-order interaction terms (powers of the attention matrix) in <strong>linear time</strong> without ever materializing the massive $n \times n$ attention matrices. This ensures the model maintains the efficiency of an RNN during inference while capturing complex token interactions.
+          </p>
+          <p class="has-text-centered">
+            <em>Theoretical foundation: <a href="https://arxiv.org/abs/2510.27258" target="_blank">Higher-order Linear Attention (HLA)</a>.</em>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="formulation" class="section content-section">
+      <div class="container">
+        <h2 class="title is-3 has-text-centered section-title">Mathematical Formulation</h2>
+        <div class="content">
+          <h3 class="title is-4">Softmax vs. Matrix Exponential</h3>
+          <p>
+            Standard Scaled Dot-Product Attention utilizes the softmax nonlinearity, which creates a mixing bottleneck that prevents easy linearization:
+          </p>
+          <div class="math-block">
+            $$ \mathrm{Attn}(\mathbf{Q}, \mathbf{K}, \mathbf{V}) = \mathrm{softmax}\left(\frac{\mathbf{Q}\mathbf{K}^\top}{\sqrt{d}}\right)\mathbf{V} $$
+          </div>
+          <p>
+            MEA replaces the softmax with the <strong>Matrix Exponential</strong> ($\mathrm{MExp}$). For an unnormalized attention matrix $\mathbf{A} = \mathbf{Q}\mathbf{K}^\top$:
+          </p>
+          <div class="math-block">
+            $$ \mathrm{MExp}(\mathbf{A})\mathbf{V} = e^{\mathbf{A}}\mathbf{V} = \left( \sum_{k=0}^{\infty} \frac{1}{k!} \mathbf{A}^k \right) \mathbf{V} $$
+          </div>
+          <p>
+            While the infinite series is exact, we approximate this by truncating the series at order $H$ (typically $H=2$). This truncation is the key to computational tractability.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="decomposition" class="section content-section">
+      <div class="container">
+        <h2 class="title is-3 has-text-centered section-title">Recursive Decomposition via HLA</h2>
+        <div class="content">
+          <p>
+            Explicitly computing the matrix power $\mathbf{A}^k$ would require <strong>$\mathcal{O}(n^3)$</strong> complexity. Even an optimized iterative product scales as $\mathcal{O}(n^2)$. MEA exploits the associativity of matrix multiplication to factorize these terms into streaming updates with <strong>$\mathcal{O}(n)$ complexity</strong>.
+          </p>
+
+          <div class="diagram-container">
+            <svg viewBox="0 0 600 220" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <marker id="arrow" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+                  </marker>
+                </defs>
+                
+                <style>
+                    .box-order { fill: #fff; stroke: #0A2540; stroke-width: 2; rx: 6; }
+                    .box-hl { fill: #E6F7FF; stroke: #00C2FF; stroke-width: 2; rx: 6; }
+                    .txt-main { font-size: 14px; font-weight: 600; fill: #0A2540; text-anchor: middle; }
+                    .txt-sub { font-size: 12px; fill: #666; text-anchor: middle; }
+                    .math-label { font-family: monospace; font-size: 13px; fill: #2D2D2D; }
+                </style>
+  
+                <text x="300" y="30" class="txt-main" font-size="16">Taylor Expansion Approximation (H=2)</text>
+                
+                <rect x="50" y="60" width="120" height="80" class="box-order" />
+                <text x="110" y="90" class="txt-main">Order 0</text>
+                <text x="110" y="110" class="txt-sub">Identity</text>
+                <text x="110" y="130" class="math-label">V</text>
+  
+                <text x="190" y="105" font-size="20" fill="#666">+</text>
+  
+                <rect x="210" y="60" width="120" height="80" class="box-order" />
+                <text x="270" y="90" class="txt-main">Order 1</text>
+                <text x="270" y="110" class="txt-sub">Linear Attn</text>
+                <text x="270" y="130" class="math-label">(QKᵀ)V</text>
+  
+                <text x="350" y="105" font-size="20" fill="#666">+</text>
+  
+                <rect x="370" y="60" width="160" height="80" class="box-hl" />
+                <text x="450" y="90" class="txt-main">Order 2</text>
+                <text x="450" y="110" class="txt-sub">Asymmetric HLA</text>
+                <text x="450" y="130" class="math-label">½ (QKᵀ)² V</text>
+  
+                <line x1="450" y1="140" x2="450" y2="160" stroke="#00C2FF" stroke-width="1.5" marker-end="url(#arrow)"/>
+                <text x="450" y="180" class="txt-sub" fill="#00C2FF">Path: Q → Kᵀ → Q → Kᵀ → V</text>
+                <text x="450" y="200" class="txt-sub" font-weight="bold">Streaming O(n)</text>
+            </svg>
+            <span class="mini-caption" style="display:block; margin-top:0.5rem; color:#6b7280; font-style:italic;">Figure 1: Decomposition of Matrix Exponential Attention into cumulative interaction orders.</span>
+          </div>
+
+          <h3 class="title is-4">Streaming Updates</h3>
+          <div class="callout-box">
+             <strong>Key Insight:</strong> Order 2 represents the path $\mathbf{Q} (\mathbf{K}^\top \mathbf{Q}) (\mathbf{K}^\top \mathbf{V})$. This allows us to maintain compact streaming states.
+          </div>
+          
+          <p>
+            The output for the second-order term at time $t$ is computed via:
+          </p>
+          <div class="math-block">
+            $$ \mathbf{o}_t^{(2)} = \mathbf{q}_t^\top \mathbf{E}_t $$
+          </div>
+          <p>
+            Where the sufficient statistics (states) update recursively:
+          </p>
+          <div class="math-block">
+            $$
+            \begin{aligned}
+            \mathbf{P}_t^{KV} &= \sum_{j \le t} \mathbf{k}_j \mathbf{v}_j^\top &\in \mathbb{R}^{d \times d_v} \\
+            \mathbf{E}_t &= \sum_{i \le t} \mathbf{k}_i (\mathbf{q}_i^\top \mathbf{P}_i^{KV}) &\in \mathbb{R}^{d \times d_v}
+            \end{aligned}
+            $$
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="masking" class="section content-section">
+      <div class="container">
+        <h2 class="title is-3 has-text-centered section-title">Exact Causal Masking</h2>
+        <div class="content">
+          <p>
+            To enforce strict autoregressive causality (masking the upper triangular of $\mathbf{Q}\mathbf{K}^\top$), MEA relies on the <strong>Extended Summaries</strong> theorem. For the symmetric interpretation of second-order interactions, we maintain cross-moment summaries $\mathbf{G}_t$ to subtract acausal contributions dynamically:
+          </p>
+          <div class="math-block">
+            $$ \mathbf{o}_t^{\text{sym}} = \mathbf{q}_t^\top \left( \mathbf{S}_t^K \mathbf{C}_t^{QV} - \mathbf{G}_t \right) $$
+          </div>
+          <p>Where the correction term $\mathbf{G}_t$ accumulates the interaction history:</p>
+          <div class="math-block">
+            $$ \mathbf{G}_t = \sum_{i \le t} (\mathbf{k}_i \mathbf{k}_i^\top) \mathbf{C}_{i-1}^{QV} $$
+          </div>
+          <p>
+            This ensures the model is mathematically equivalent to a masked Transformer while maintaining the efficiency of a Recurrent Neural Network.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="citation" class="section content-section">
+      <div class="container">
+        <h2 class="title is-3 has-text-centered section-title">Citation</h2>
+        <div class="content">
+<pre id="cite-bibtex"><code>@article{zhang2025matrix,
+   title   = {Matrix Exponential Attention},
+   author  = {Zhang, Yifan},
+   journal = {yifanzhang-pro.github.io},
+   year = {2025},
+   month = {December},
+   url = "https://github.com/yifanzhang-pro/MEA"
+}
+
+@article{zhang2025hla,
+   title   = {Higher-order Linear Attention},
+   author  = {Zhang, Yifan and Qin, Zhen and Gu, Quanquan},
+   journal = {arXiv preprint 2510.27258},
+   year    = {2025}
+}</code></pre>
+          <p>
+            <button id="copy-cite" class="button is-small is-link is-light">
+              <span class="icon"><i class="fas fa-clipboard"></i></span>
+              <span>Copy BibTeX</span>
+            </button>
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="content has-text-centered">
+        <p>
+          <a href="#overview">Overview</a> &nbsp;&bull;&nbsp;
+          <a href="#formulation">Formulation</a> &nbsp;&bull;&nbsp;
+          <a href="#decomposition">Decomposition</a> &nbsp;&bull;&nbsp;
+          <a href="#citation">Citation</a>
+        </p>
+        <p>&copy; 2025 Yifan Zhang. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Mobile navbar toggle
+    document.addEventListener('DOMContentLoaded', () => {
+      const $burgers = Array.from(document.querySelectorAll('.navbar-burger'));
+      $burgers.forEach(el => {
+        el.addEventListener('click', () => {
+          const target = el.dataset.target;
+          const $target = document.getElementById(target);
+          el.classList.toggle('is-active');
+          $target.classList.toggle('is-active');
+        });
+      });
+
+      // Hex -> rgb helper
+      function hexToRgb(hex){
+        const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return m ? { r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16) } : null;
+      }
+      const root = document.documentElement;
+      const styles = getComputedStyle(root);
+      const p = styles.getPropertyValue('--primary-color').trim();
+      const l = styles.getPropertyValue('--link-color').trim();
+      const prgb = hexToRgb(p), lrgb = hexToRgb(l);
+      if(prgb){ root.style.setProperty('--primary-color-rgb', `${prgb.r}, ${prgb.g}, ${prgb.b}`); }
+      if(lrgb){ root.style.setProperty('--link-color-rgb', `${lrgb.r}, ${lrgb.g}, ${lrgb.b}`); }
+
+      // Copy BibTeX
+      const btn = document.getElementById('copy-cite');
+      const pre = document.getElementById('cite-bibtex');
+      if(btn && pre){
+        btn.addEventListener('click', async () => {
+          const text = pre.innerText;
+          try{
+            await navigator.clipboard.writeText(text);
+            btn.classList.add('is-success');
+            btn.classList.remove('is-link','is-light');
+            btn.innerHTML = '<span class="icon"><i class="fas fa-check"></i></span><span>Copied</span>';
+            setTimeout(() => {
+              btn.classList.remove('is-success');
+              btn.classList.add('is-link','is-light');
+              btn.innerHTML = '<span class="icon"><i class="fas fa-clipboard"></i></span><span>Copy BibTeX</span>';
+            }, 1600);
+          }catch(e){
+            const range = document.createRange();
+            range.selectNode(pre);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            try{ document.execCommand('copy'); }catch(_){}
+            sel.removeAllRanges();
+          }
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>
