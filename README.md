@@ -16,6 +16,11 @@ MEA approximates the matrix exponential of attention scores via a truncated Tayl
 
 See [Higher-order Linear Attention (HLA)](https://arxiv.org/abs/2510.27258) for the theoretical foundation of the streaming algorithms used here.
 
+## Implementations / Integrations
+
+- nanoGPT (experimental): https://github.com/karpathy/nanoGPT/pull/672 (code: https://github.com/ry2009/nanoGPT-mea/tree/mea-attn). Includes a reference MEA (H≤2) attention backend, a correctness check, and an attention-only benchmark showing the crossover only at very long sequence lengths on an A100.
+- nanoGPT (experimental): https://github.com/karpathy/nanoGPT/pull/672 (code: https://github.com/ry2009/nanoGPT-mea/tree/mea-attn). Includes a reference MEA (H≤2) attention backend, a correctness check, and an attention-only benchmark showing the expected scaling and a crossover around ~65k tokens (with tuned chunk size) on an A100.
+
 ## Mathematical Formulation
 
 Standard Scaled Dot-Product Attention utilizes the softmax nonlinearity:
